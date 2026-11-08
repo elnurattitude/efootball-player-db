@@ -121,11 +121,15 @@ function showAI(d){
  const players=Array.isArray(d.players)?d.players:[];
  const phtml=players.map(p=>'<div class="ai-player"><b>'+ae(p.name||"Noma’lum futbolchi")+'</b><span>'+ae(p.position||"Pozitsiya noma’lum")+' · '+ae(p.rating??"—")+'</span><small>'+ae(p.card_type||"Kartasi aniqlanmadi")+' · ishonch: '+ae(p.confidence||"past")+'</small></div>').join("");
  const t=d.tactical_setup||{},thtml=Object.entries(t).map(([k,v])=>'<div class="ai-tactic"><b>'+ae(k.replaceAll("_"," "))+'</b><span>'+ae(Array.isArray(v)?v.join(", "):v)+'</span></div>').join("");
+ const roles=Array.isArray(d.player_roles)?d.player_roles:[];
+ const rhtml=roles.map(r=>'<div class="ai-tactic"><b>'+ae(r.position||"Pozitsiya")+'</b><span>'+ae(r.player_name||"Noma’lum futbolchi")+' — '+ae(r.reason||"")+'</span></div>').join("");
  const ul=x=>Array.isArray(x)?x.map(v=>"<li>"+ae(typeof v==="string"?v:JSON.stringify(v))+"</li>").join(""):"";
  aiResult.innerHTML='<span class="eyebrow">GEMINI VISION ANALYSIS</span><h3>AI tahlil natijasi</h3><p>'+ae(d.overview||"Tahlil yakunlandi.")+'</p>'+
  '<div class="ai-highlights"><div><small>Tavsiya etilgan sxema</small><b>'+ae(d.recommended_formation||"Aniqlanmadi")+'</b></div><div><small>Team Playstyle</small><b>'+ae(d.recommended_team_playstyle||"Aniqlanmadi")+'</b></div><div><small>Murabbiy</small><b>'+ae(d.manager?.name||"Aniqlanmadi")+'</b></div></div>'+
+ '<h4>Hozirgi holat</h4><p class="muted">Aniqlangan sxema: '+ae(d.formation_detected||"Noma’lum")+' · Aniqlangan Team Playstyle: '+ae(d.team_playstyle_detected||"Noma’lum")+'</p>'+
  '<h4>Aniqlangan futbolchilar ('+players.length+')</h4><div class="ai-player-grid">'+(phtml||'<p class="muted">Futbolchilar aniqlanmadi.</p>')+'</div>'+
  '<h4>Taktik sozlamalar</h4><div class="ai-tactics-grid">'+(thtml||'<p class="muted">Taktika qaytmadi.</p>')+'</div>'+
+ '<h4>Joylashuv va futbolchi rollari</h4><div class="ai-tactics-grid">'+(rhtml||'<p class="muted">Rollar qaytmadi.</p>')+'</div>'+
  '<h4>O‘zgartirish tavsiyalari</h4><ul>'+ul(d.changes_to_make)+'</ul><h4>Kuchli tomonlar</h4><ul>'+ul(d.key_strengths)+'</ul><h4>Zaif tomonlar</h4><ul>'+ul(d.weaknesses)+'</ul><h4>Aniqlik talab qiladigan joylar</h4><ul>'+ul(d.uncertainties)+'</ul>'+
  '<p class="tiny muted">AI xato qilishi mumkin. Kartalar, reytinglar va murabbiy ma’lumotlarini o‘yin ichida tekshiring.</p><details><summary>To‘liq AI javobi</summary><pre>'+ae(JSON.stringify(d,null,2))+'</pre></details>';
  aiResult.hidden=false;
@@ -145,7 +149,11 @@ aiButton.addEventListener("click",async()=>{
   if(!res.ok)throw Error(out.error||("Server xatosi: "+res.status));
   if(!out.analysis)throw Error("AI javobida tahlil topilmadi.");
   showAI(out.analysis);aiMsg("AI tahlili tayyor. Natijani tekshirib chiqing.");aiResult.scrollIntoView({behavior:"smooth",block:"start"});
- }catch(e){console.error(e);aiMsg("AI xatosi: "+(e.message||"Noma’lum xato"));}
+ }catch(e){
+  console.error(e);
+  const msg=e?.message||"Noma’lum xato";
+  aiMsg(msg==="Failed to fetch"?"Worker bilan aloqa o‘rnatilmadi. Cloudflare’da Worker deploy qilinganini, GEMINI_API_KEY Secret saqlanganini va URL /analyze bilan tugashini tekshiring.": "AI xatosi: "+msg);
+ }
  finally{busy=false;aiButton.textContent="AI bilan qayta tahlil qilish ✦";updateAIButton();}
 });
 
