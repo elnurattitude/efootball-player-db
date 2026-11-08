@@ -1,14 +1,18 @@
 const ALLOWED_ORIGIN = "https://elnurattitude.github.io";
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.5-flash";
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const cors = {"Access-Control-Allow-Origin":ALLOWED_ORIGIN,"Access-Control-Allow-Methods":"POST, GET, OPTIONS","Access-Control-Allow-Headers":"Content-Type","Vary":"Origin"};
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});}
 export default {async fetch(request,env){
  const origin=request.headers.get("Origin")||"";
- if(origin!==ALLOWED_ORIGIN)return new Response("Forbidden",{status:403});
- if(request.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  const url=new URL(request.url);
- if(request.method==="GET"&&url.pathname==="/")return json({service:"eFOOT TACTICS AI",status:"ready",model:MODEL});
+ // Health check is intentionally readable in a normal browser tab (no Origin header).
+ if(request.method==="GET"&&url.pathname==="/")return json({service:"eFOOT TACTICS AI",status:"ready",model:MODEL,apiKeyConfigured:Boolean(env.GEMINI_API_KEY)});
+ if(request.method==="OPTIONS"){
+  if(origin!==ALLOWED_ORIGIN)return new Response("Forbidden",{status:403});
+  return new Response(null,{status:204,headers:cors});
+ }
+ if(origin!==ALLOWED_ORIGIN)return new Response("Forbidden",{status:403});
  if(request.method!=="POST"||url.pathname!=="/analyze")return json({error:"Endpoint topilmadi."},404);
  if(!env.GEMINI_API_KEY)return json({error:"Serverda GEMINI_API_KEY secret sozlanmagan."},500);
  if(Number(request.headers.get("Content-Length")||0)>MAX_BODY_BYTES)return json({error:"So‘rov 8 MB limitdan oshdi."},413);
@@ -33,7 +37,10 @@ Write explanations in Uzbek. Keep player names as shown in-game. Do not guess un
   const raw=await upstream.json().catch(()=>({}));
   if(!upstream.ok)return json({error:raw.error?.message||"Gemini API so‘rovi bajarilmadi."},upstream.status===429?429:502);
   const responseText=raw.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
-  if(!responseText)return json({error:"AI bo‘sh javob qaytardi."},502);
+  if(!responseText){
+   const reason=raw.candidates?.[0]?.finishReason||raw.promptFeedback?.blockReason||"unknown";
+   return json({error:"Gemini javobi bo‘sh yoki bloklandi. Sabab: "+reason},502);
+  }
   let analysis;try{analysis=JSON.parse(responseText);}catch{return json({error:"AI javobi JSON formatida emas. Qayta urinib ko‘ring."},502);}
   return json({analysis,model:MODEL});
  }catch(error){return json({error:error?.message||"Server xatosi."},500);}
