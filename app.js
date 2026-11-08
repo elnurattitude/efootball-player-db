@@ -14,7 +14,7 @@
   const PAGE_SIZE = 24;
 
   let page = 0;
-  let total = 0;
+  let hasNextPage = false;
   let debounceTimer;
   let requestNumber = 0;
 
@@ -39,6 +39,10 @@
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     }[ch]));
+  }
+
+  function normalizeSearch(value) {
+    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   }
 
   function renderPlayer(player) {
@@ -70,16 +74,16 @@
     playersEl.innerHTML = "";
 
     try {
+      const term = normalizeSearch(searchEl.value);
       let query = db.from("players")
-        .select("external_id,name,full_name,age,height_cm,weight_kg,registered_position,youth_club", { count: "exact" })
+        .select("external_id,name,full_name,age,height_cm,weight_kg,registered_position,youth_club")
         .order("name", { ascending: true })
-        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
-      const term = searchEl.value.trim();
-      if (term) query = query.ilike("name", `%${term}%`);
+      if (term) query = query.ilike("search_name", `%${term}%`);
       if (positionEl.value) query = query.eq("registered_position", positionEl.value);
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (currentRequest !== requestNumber) return;
 
       if (error) {
@@ -89,19 +93,24 @@
         return;
       }
 
-      total = count || 0;
-      countEl.textContent = `${total.toLocaleString("uz-UZ")} futbolchi`;
+      const rows = data || [];
+      hasNextPage = rows.length > PAGE_SIZE;
+      const visibleRows = rows.slice(0, PAGE_SIZE);
+
+      countEl.textContent = term || positionEl.value
+        ? `${visibleRows.length} ta natija`
+        : "104 mingdan ortiq futbolchi";
       pageLabel.textContent = `${page + 1}-sahifa`;
       prevBtn.disabled = page === 0;
-      nextBtn.disabled = (page + 1) * PAGE_SIZE >= total;
+      nextBtn.disabled = !hasNextPage;
 
-      if (!data || data.length === 0) {
+      if (visibleRows.length === 0) {
         statusEl.textContent = "Mos futbolchi topilmadi.";
         return;
       }
 
       statusEl.textContent = "";
-      playersEl.innerHTML = data.map(renderPlayer).join("");
+      playersEl.innerHTML = visibleRows.map(renderPlayer).join("");
     } catch (error) {
       if (currentRequest !== requestNumber) return;
       console.error("Unexpected loading error:", error);
@@ -144,7 +153,7 @@
 
   searchEl.addEventListener("input", () => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(refresh, 300);
+    debounceTimer = setTimeout(refresh, 350);
   });
   positionEl.addEventListener("change", refresh);
 
@@ -162,13 +171,12 @@
   });
 
   nextBtn.addEventListener("click", () => {
-    if ((page + 1) * PAGE_SIZE < total) {
+    if (hasNextPage) {
       page++;
       loadPlayers();
     }
   });
 
-  // Start both requests independently: a slow positions query must not block the player list.
   loadPlayers();
   loadPositions();
 })();
