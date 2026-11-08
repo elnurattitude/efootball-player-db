@@ -20,6 +20,9 @@ Cloudflare's free Workers plan currently lists up to 100,000 requests/day. Gemin
 2. On the website, enter that URL with /analyze at the end.
 3. Select screenshots, check the consent box and run AI analysis.
 
+## Model
+- Worker uses `gemini-3.5-flash-lite`, which supports image input and is optimized for lower-latency, cost-efficient analysis.
+
 ## Notes
 - Images are resized in the browser in color-preserving format and sent to Gemini only after consent. OCR preprocessing remains separate.
 - The Worker allows requests from https://elnurattitude.github.io only.
