@@ -3,43 +3,67 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="eFootball futbolchilari bazasi — ism va pozitsiya bo‘yicha qidiruv.">
-  <title>eFootball Player Database</title>
+  <meta name="description" content="eFootball akkauntlarini futbolchilar tarkibi va narxi bo‘yicha toping.">
+  <title>eFOOT Market — eFootball Account Marketplace</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <main class="shell">
-    <header class="header">
-      <div>
-        <p class="eyebrow">PLAYER DATABASE</p>
-        <h1>eFootball <span>Players</span></h1>
-        <p class="sub">104 mingdan ortiq futbolchini ism yoki pozitsiya bo‘yicha qidiring.</p>
-      </div>
-      <div class="count" id="result-count">Yuklanmoqda…</div>
-    </header>
-    <section class="filters" aria-label="Futbolchilar qidiruvi">
-      <label class="search">
-        <span>Futbolchi ismi</span>
-        <input id="search" type="search" placeholder="Masalan: Yohei Sato…" autocomplete="off">
-      </label>
-      <label>
-        <span>Pozitsiya</span>
-        <select id="position"><option value="">Barcha pozitsiyalar</option></select>
-      </label>
-      <button id="clear" class="secondary" type="button">Tozalash</button>
+  <div class="topbar"><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>MARKET</b></span></a><nav><a href="#market">Akkauntlar</a><a href="#how">Qanday ishlaydi?</a><a class="guarantor-link" href="https://t.me/wxetg" target="_blank" rel="noopener">Garant: @wxetg ↗</a></nav></div>
+  <main>
+    <section class="hero">
+      <div class="hero-copy"><p class="eyebrow">eFOOTBALL ACCOUNT MARKETPLACE</p><h1>O‘zing istagan<br><span>tarkibni top.</span></h1><p class="hero-sub">Kerakli futbolchilar bor akkauntni top yoki o‘z akkauntingni hamjamiyatga taklif qil.</p><div class="hero-actions"><a class="btn btn-gold" href="#market">Akkaunt qidirish <span>↗</span></a><a class="text-link" href="#sell">Akkaunt joylashtirish</a></div><div class="trust-line"><span class="trust-dot"></span> E’lonlar admin tekshiruvidan so‘ng chiqariladi</div></div>
+      <div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-ball">⚽</div><div class="hero-tag tag-top">BUILD YOUR SQUAD</div><div class="hero-tag tag-bottom">FIND YOUR ACCOUNT</div></div>
     </section>
-    <p id="status" class="status" role="status">Ma’lumotlar bazasiga ulanmoqda…</p>
-    <section id="players" class="players" aria-live="polite"></section>
-    <div class="pagination">
-      <button id="previous" class="secondary" type="button" disabled>Oldingi</button>
-      <span id="page-label">1-sahifa</span>
-      <button id="next" class="secondary" type="button" disabled>Keyingi</button>
-    </div>
-    <footer>Mustaqil hamjamiyat loyihasi. KONAMI bilan bog‘liq emas.</footer>
+    <section id="market" class="section">
+      <div class="section-heading"><div><p class="eyebrow">MARKETPLACE</p><h2>Akkauntlarni <span>qidirish</span></h2><p class="muted">Tarkibdagi futbolchilar yoki narx orqali mos akkauntlarni toping.</p></div><div class="live-label"><i></i> E’lonlar</div></div>
+      <div class="market-layout">
+        <aside class="filter-panel">
+          <div class="panel-title"><h3>Qidiruv filtrlari</h3><button id="resetFilters" class="plain-btn">Tozalash</button></div>
+          <label class="field-label">Minimal narx (so‘m)<input id="minPrice" type="number" min="0" placeholder="Masalan, 100000"></label>
+          <label class="field-label">Maksimal narx (so‘m)<input id="maxPrice" type="number" min="0" placeholder="Masalan, 1000000"></label>
+          <label class="field-label">Saralash<select id="sortPrice"><option value="newest">Avval yangilari</option><option value="low">Arzonidan qimmatiga</option><option value="high">Qimmatidan arzoniga</option></select></label>
+          <div class="filter-divider"></div><div class="panel-title"><h3>Futbolchi bo‘yicha</h3><span class="selected-count" id="selectedCount">0/11</span></div>
+          <p class="tiny muted">Maydondagi + tugmasini bosib kerakli futbolchilarni tanlang.</p>
+          <div class="mini-formation" id="filterFormation">
+            <div class="pitch-line"></div>
+            <div class="slot-row"><button class="mini-slot" data-slot="LWF"><b>+</b><small>LWF</small></button><button class="mini-slot" data-slot="CF"><b>+</b><small>CF</small></button><button class="mini-slot" data-slot="RWF"><b>+</b><small>RWF</small></button></div>
+            <div class="slot-row"><button class="mini-slot" data-slot="AMF"><b>+</b><small>AMF</small></button></div>
+            <div class="slot-row"><button class="mini-slot" data-slot="CMF"><b>+</b><small>CMF</small></button><button class="mini-slot" data-slot="DMF"><b>+</b><small>DMF</small></button></div>
+            <div class="slot-row"><button class="mini-slot" data-slot="LB"><b>+</b><small>LB</small></button><button class="mini-slot" data-slot="CB1"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="CB2"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="RB"><b>+</b><small>RB</small></button></div>
+            <div class="slot-row"><button class="mini-slot" data-slot="GK"><b>+</b><small>GK</small></button></div>
+          </div>
+          <button id="applyFilters" class="btn btn-gold full-btn">Akkauntlarni topish</button>
+        </aside>
+        <div class="results-area"><div class="results-toolbar"><span id="listingCount">E’lonlar yuklanmoqda…</span><button id="refreshListings" class="plain-btn">↻ Yangilash</button></div><div id="listings" class="listing-grid"><div class="empty-state">E’lonlar yuklanmoqda…</div></div></div>
+      </div>
+    </section>
+    <section id="sell" class="section sell-section"><div class="section-heading"><div><p class="eyebrow">FOR SELLERS</p><h2>Akkauntingni <span>joylashtir</span></h2><p class="muted">Ma’lumotlarni to‘ldir, tarkibni tanla va e’lonni moderatsiyaga yubor.</p></div></div>
+      <div class="sell-card"><form id="listingForm">
+        <div class="form-grid">
+          <label class="field-label">E’lon sarlavhasi<input id="listingTitle" maxlength="90" required placeholder="Masalan: Epic va Big Time futbolchilar bor akkaunt"></label>
+          <label class="field-label">Narxi (so‘m)<input id="listingPrice" type="number" min="1" required placeholder="Masalan: 750000"></label>
+          <label class="field-label span-two">Akkaunt haqida ma’lumot<textarea id="listingDescription" maxlength="1200" rows="4" placeholder="Akkaunt tarkibi, platformasi va boshqa muhim ma’lumotlar…"></textarea></label>
+          <label class="field-label">Telegram username<input id="sellerTelegram" required placeholder="@username"></label>
+          <label class="field-label">Rasm havolasi (ixtiyoriy)<input id="listingPhoto" type="url" placeholder="https://…"></label>
+        </div>
+        <div class="sell-line"><div><b>Akkauntdagi futbolchilar</b><p class="tiny muted">Quyidagi 11 talikdan futbolchilarni tanlashing mumkin.</p></div><span class="selected-count" id="sellSelectedCount">0/11</span></div>
+        <div class="mini-formation sell-formation" id="sellFormation">
+          <div class="pitch-line"></div>
+          <div class="slot-row"><button class="mini-slot" data-slot="LWF"><b>+</b><small>LWF</small></button><button class="mini-slot" data-slot="CF"><b>+</b><small>CF</small></button><button class="mini-slot" data-slot="RWF"><b>+</b><small>RWF</small></button></div>
+          <div class="slot-row"><button class="mini-slot" data-slot="AMF"><b>+</b><small>AMF</small></button></div>
+          <div class="slot-row"><button class="mini-slot" data-slot="CMF"><b>+</b><small>CMF</small></button><button class="mini-slot" data-slot="DMF"><b>+</b><small>DMF</small></button></div>
+          <div class="slot-row"><button class="mini-slot" data-slot="LB"><b>+</b><small>LB</small></button><button class="mini-slot" data-slot="CB1"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="CB2"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="RB"><b>+</b><small>RB</small></button></div>
+          <div class="slot-row"><button class="mini-slot" data-slot="GK"><b>+</b><small>GK</small></button></div>
+        </div>
+        <label class="confirm-check"><input id="sellerConfirm" type="checkbox" required><span>Men e’lon ma’lumotlari to‘g‘riligini tasdiqlayman va platforma qoidalariga roziman.</span></label>
+        <button class="btn btn-gold submit-btn" id="submitListing" type="submit">E’lonni moderatsiyaga yuborish ↗</button><p id="formStatus" class="form-status" role="status"></p>
+      </form></div>
+    </section>
+    <section id="how" class="section how-section"><div class="section-heading"><div><p class="eyebrow">SAFE COMMUNITY</p><h2>Qanday <span>ishlaydi?</span></h2></div></div><div class="steps"><article><span>01</span><h3>Akkauntni top</h3><p>Futbolchilar tarkibi yoki narx bo‘yicha e’lonlarni qidir.</p></article><article><span>02</span><h3>Sotuvchi bilan bog‘lan</h3><p>E’londagi Telegram username orqali sotuvchiga yoz.</p></article><article><span>03</span><h3>Garant bilan kelish</h3><p>Bitim shartlarini oldindan muhokama qilish uchun garantga murojaat qil.</p></article></div><div class="guarantor-banner"><div><p class="eyebrow">MIDDLEMAN SERVICE</p><h3>Bitim bo‘yicha yordam kerakmi?</h3><p class="muted">Garant bilan Telegram orqali bog‘laning: @wxetg</p></div><a class="btn btn-gold" href="https://t.me/wxetg" target="_blank" rel="noopener">Garantga yozish ↗</a></div><p class="disclaimer">Mustaqil hamjamiyat platformasi. KONAMI yoki eFootball bilan rasmiy aloqasi yo‘q. Akkaunt savdosi o‘yin xizmat ko‘rsatish shartlariga zid bo‘lishi va akkaunt cheklanishiga olib kelishi mumkin. Har qanday bitimdan oldin amaldagi qoidalarni tekshiring. Platforma to‘lovlarni qabul qilmaydi va bitim xavfsizligini kafolatlamaydi.</p></section>
   </main>
-  <script src="config.js?v=1"></script>
-  <script src="app.js?v=4"></script>
-</body>
-</html>
+  <footer class="site-footer"><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>MARKET</b></span></a><span>Mustaqil hamjamiyat loyihasi · © 2026</span><a href="https://t.me/wxetg" target="_blank" rel="noopener">@wxetg</a></footer>
+  <div id="playerModal" class="modal" aria-hidden="true"><div class="modal-backdrop" data-close="true"></div><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-head"><div><p class="eyebrow">PLAYER DATABASE</p><h3 id="modalTitle">Futbolchi tanlash</h3></div><button id="closeModal" class="close-btn" aria-label="Yopish">×</button></div><input id="playerSearch" class="modal-search" type="search" placeholder="Futbolchi ismini yozing…"><div id="playerResults" class="player-results"><p class="muted">Qidirish uchun futbolchi ismini yozing.</p></div></div></div>
+  <script src="config.js?v=1"></script><script src="app.js?v=5"></script>
+</body></html>
