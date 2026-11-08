@@ -1,8 +1,7 @@
 (() => {
 "use strict";
 const cfg=window.APP_CONFIG||{},$=s=>document.querySelector(s);
-if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_PUBLISHABLE_KEY){$("#uploadStatus").textContent="Supabase ulanishi sozlanmagan.";return;}
-const db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_PUBLISHABLE_KEY);
+const db=(window.supabase&&cfg.SUPABASE_URL&&cfg.SUPABASE_PUBLISHABLE_KEY)?window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_PUBLISHABLE_KEY):null;
 let imageFile=null,players=[],worker=null;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function setStatus(message){$("#uploadStatus").textContent=message;}
@@ -34,6 +33,7 @@ $("#analyzeBtn").addEventListener("click",async()=>{
 function cleanTerm(s){return String(s||"").replace(/[^a-zA-ZÀ-ÿ' .-]/g," ").replace(/\s+/g," ").trim();}
 async function lookup(term){
  const q=cleanTerm(term);if(q.length<3)return [];
+ if(!db){setStatus("Futbolchi bazasiga ulanish yo‘q. Sahifani yangilang.");return [];}
  const {data,error}=await db.from("players").select("external_id,name,registered_position").ilike("search_name","%"+q.replace(/[%_]/g,"")+"%").order("name").limit(5);
  if(error){console.warn(error);return [];}return data||[];
 }
