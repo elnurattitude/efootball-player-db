@@ -61,6 +61,7 @@ $("#analyzeBtn").addEventListener("click",async()=>{
   if(!window.Tesseract)throw new Error("OCR moduli yuklanmadi. Internetni tekshirib sahifani yangilang.");
   if(!worker){worker=await Tesseract.createWorker("eng",1,{logger:m=>{if(m.status==="recognizing text")status("Matn aniqlanmoqda… "+Math.round((m.progress||0)*100)+"%");}});await worker.setParameters({tessedit_pageseg_mode:"11",preserve_interword_spaces:"1"});}
   const all=[];
+  ["startingText","benchText","reserveText","managerText","allText"].forEach(id=>$("#"+id).value="");
   for(let i=0;i<files.length;i++){
    const item=files[i];status((i+1)+"/"+files.length+" · "+item.file.name+" o‘qilmoqda…");
    const image=await preprocess(item.file);const result=await worker.recognize(image);
