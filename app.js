@@ -1,29 +1,34 @@
 (() => {
+  "use strict";
+
   const cfg = window.APP_CONFIG || {};
   const statusEl = document.querySelector("#status");
   const playersEl = document.querySelector("#players");
   const searchEl = document.querySelector("#search");
   const positionEl = document.querySelector("#position");
-  const ratingEl = document.querySelector("#rating");
   const countEl = document.querySelector("#result-count");
   const pageLabel = document.querySelector("#page-label");
   const prevBtn = document.querySelector("#previous");
   const nextBtn = document.querySelector("#next");
-
   const PAGE_SIZE = 24;
+
   let page = 0;
   let total = 0;
-  let debounce;
+  let debounceTimer = null;
+  let requestNumber = 0;
 
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_PUBLISHABLE_KEY ||
       cfg.SUPABASE_URL.includes("YOUR-PROJECT") ||
       cfg.SUPABASE_PUBLISHABLE_KEY.includes("REPLACE_ME")) {
-    statusEl.textContent = "Setup required: add your Supabase URL and publishable key to config.js.";
-    countEl.textContent = "Not connected";
+    statusEl.textContent = "Sozlash kerak: Supabase URL va publishable key qiymatlarini config.js fayliga kiriting.";
+    countEl.textContent = "Ulanmagan";
     return;
   }
 
-  const db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY);
+  const db = window.supabase.createClient(
+    cfg.SUPABASE_URL,
+    cfg.SUPABASE_PUBLISHABLE_KEY
+  );
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -31,54 +36,102 @@
     }[ch]));
   }
 
+  function displayValue(value) {
+    if (value === null || value === undefined || value === "") return "";
+    if (Array.isArray(value)) return value.map(displayValue).filter(Boolean).join(", ");
+    if (typeof value === "object") return Object.values(value).map(displayValue).filter(Boolean).join(", ");
+    return String(value);
+  }
+
+  function renderPlayer(player) {
+    const fullName = player.full_name && player.full_name !== player.name
+      ? player.full_name : "";
+    const position = player.registered_position || "Pozitsiya ko‘rsatilmagan";
+    const nationality = displayValue(player.nationality_ids);
+    const details = [
+      player.age ? `${escapeHtml(player.age)} yosh` : "",
+      player.height_cm ? `${escapeHtml(player.height_cm)} cm` : "",
+      player.strong_foot ? `Oyoq: ${escapeHtml(player.strong_foot)}` : ""
+    ].filter(Boolean).join(" · ");
+
+    return `
+      <article class="player-card">
+        <div class="rating" aria-label="Futbolchi ID">ID</div>
+        <div class="card-info">
+          <h2>${escapeHtml(player.name || "Nomi mavjud emas")}</h2>
+          ${fullName ? `<p>${escapeHtml(fullName)}</p>` : ""}
+          <div class="tags">
+            <span>${escapeHtml(position)}</span>
+            ${nationality ? `<span title="Manba faylidagi millat identifikatori">${escapeHtml(nationality)}</span>` : ""}
+          </div>
+          ${details ? `<p class="style">${details}</p>` : ""}
+          ${player.youth_club ? `<p>${escapeHtml(player.youth_club)}</p>` : ""}
+        </div>
+      </article>`;
+  }
+
   async function loadPlayers() {
-    statusEl.textContent = "Loading players…";
+    const thisRequest = ++requestNumber;
+    statusEl.textContent = "Futbolchilar yuklanmoqda…";
     playersEl.innerHTML = "";
-    let query = db.from("player_catalog")
-      .select("*", { count: "exact" })
-      .order("player_name", { ascending: true })
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+    let query = db.from("players")
+      .select("external_id,name,full_name,nationality_ids,age,height_cm,weight_kg,strong_foot,star_rating,registered_position,youth_club", { count: "exact" })
+      .order("name", { ascending: true })
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
     const term = searchEl.value.trim();
     const position = positionEl.value;
-    const minRating = ratingEl.value;
 
-    if (term) query = query.ilike("player_name", `%${term}%`);
-    if (position) query = query.eq("position", position);
-    if (minRating) query = query.gte("overall_rating", Number(minRating));
+    if (term) query = query.ilike("name", `%${term}%`);
+    if (position) query = query.eq("registered_position", position);
 
     const { data, error, count } = await query;
+    if (thisRequest !== requestNumber) return;
+
     if (error) {
-      statusEl.textContent = `Database error: ${error.message}`;
-      countEl.textContent = "Error";
+      console.error("Supabase query error:", error);
+      statusEl.textContent = `Ma’lumotlar bazasi xatosi: ${error.message}`;
+      countEl.textContent = "Xatolik";
       return;
     }
 
     total = count || 0;
-    countEl.textContent = `${total.toLocaleString()} cards`;
-    pageLabel.textContent = `Page ${page + 1}`;
+    countEl.textContent = `${total.toLocaleString("uz-UZ")} futbolchi`;
+    pageLabel.textContent = `${page + 1}-sahifa`;
     prevBtn.disabled = page === 0;
     nextBtn.disabled = (page + 1) * PAGE_SIZE >= total;
 
-    if (!data?.length) {
-      statusEl.textContent = "No matching players found.";
+    if (!data || data.length === 0) {
+      statusEl.textContent = "Mos futbolchi topilmadi.";
       return;
     }
 
     statusEl.textContent = "";
-    playersEl.innerHTML = data.map(p => `
-      <article class="player-card">
-        <div class="rating">${p.overall_rating ?? "—"}</div>
-        <div class="card-info">
-          <h2>${escapeHtml(p.player_name)}</h2>
-          <p>${escapeHtml(p.nationality || "Nationality unknown")}</p>
-          <div class="tags">
-            <span>${escapeHtml(p.position || "Position —")}</span>
-            <span>${escapeHtml(p.card_type || "Standard")}</span>
-          </div>
-          <p class="style">${escapeHtml(p.playing_style || "")}</p>
-        </div>
-      </article>`).join("");
+    playersEl.innerHTML = data.map(renderPlayer).join("");
+  }
+
+  async function loadPositions() {
+    const { data, error } = await db.from("players")
+      .select("registered_position")
+      .not("registered_position", "is", null)
+      .limit(1000);
+
+    if (error) {
+      console.warn("Pozitsiyalarni yuklashda xatolik:", error);
+      return;
+    }
+
+    const positions = [...new Set((data || [])
+      .map(row => row.registered_position)
+      .filter(Boolean))].sort();
+
+    positions.forEach(position => {
+      const option = document.createElement("option");
+      option.value = position;
+      option.textContent = position;
+      positionEl.appendChild(option);
+    });
   }
 
   function refreshFromFirstPage() {
@@ -87,30 +140,31 @@
   }
 
   searchEl.addEventListener("input", () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(refreshFromFirstPage, 250);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(refreshFromFirstPage, 300);
   });
+
   positionEl.addEventListener("change", refreshFromFirstPage);
-  ratingEl.addEventListener("change", refreshFromFirstPage);
+
   document.querySelector("#clear").addEventListener("click", () => {
     searchEl.value = "";
     positionEl.value = "";
-    ratingEl.value = "";
     refreshFromFirstPage();
   });
-  prevBtn.addEventListener("click", () => { if (page > 0) { page--; loadPlayers(); } });
-  nextBtn.addEventListener("click", () => { if ((page + 1) * PAGE_SIZE < total) { page++; loadPlayers(); } });
 
-  async function loadPositions() {
-    const { data, error } = await db.from("players").select("position").not("position", "is", null);
-    if (error) return;
-    [...new Set(data.map(x => x.position).filter(Boolean))].sort().forEach(pos => {
-      const option = document.createElement("option");
-      option.value = pos;
-      option.textContent = pos;
-      positionEl.appendChild(option);
-    });
-  }
+  prevBtn.addEventListener("click", () => {
+    if (page > 0) {
+      page--;
+      loadPlayers();
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    if ((page + 1) * PAGE_SIZE < total) {
+      page++;
+      loadPlayers();
+    }
+  });
 
   loadPositions().finally(loadPlayers);
 })();
