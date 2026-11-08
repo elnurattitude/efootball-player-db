@@ -39,8 +39,9 @@ async function lookup(term){
 }
 async function autoFindCandidates(raw){
  const lines=raw.split(/\n/).map(cleanTerm).filter(x=>x.length>=4&&x.length<=36&&/[a-zA-Z]{3}/.test(x));
- const unique=[...new Set(lines)].slice(0,18);let found=[];
- for(const line of unique){const hits=await lookup(line);found.push(...hits);}
+ const unique=[...new Set(lines)].slice(0,12);
+ const batches=await Promise.all(unique.map(line=>lookup(line)));
+ let found=batches.flat();
  const seen=new Set();found=found.filter(p=>{const id=String(p.external_id);if(seen.has(id))return false;seen.add(id);return true;}).slice(0,24);
  renderSearchResults(found,"OCR bo‘yicha ehtimoliy mosliklar");
 }
@@ -83,9 +84,10 @@ function buildRecommendations(){
   {name:"Quick Counter",fit:"Tezkor CF/LWF/RWF va yuqori pressingni yoqtirsangiz",detail:"Tez hujumga chiqish va raqib himoyasi ortiga yugurish."},
   {name:"Possession Game",fit:"Pas, to‘p nazorati va texnik CMF/AMF futbolchilaringiz kuchli bo‘lsa",detail:"Qisqa paslar va sabrli hujum qurilishi."},
   {name:"Long Ball Counter",fit:"Mustahkam CB/DMF va tezkor qarshi hujumchilar bo‘lsa",detail:"Himoyada ixcham turish va to‘pni qaytarib tez hujum qilish."},
-  {name:"Out Wide",fit:"Kuchli LWF/RWF va hujumkor qanot himoyachilaringiz bo‘lsa",detail:"Qanotlardan foydalanish va jarima maydoniga uzatmalar."}
+  {name:"Out Wide",fit:"Kuchli LWF/RWF va hujumkor qanot himoyachilaringiz bo‘lsa",detail:"Qanotlardan foydalanish va jarima maydoniga uzatmalar."},
+  {name:"Long Ball",fit:"Oldinda jismonan kuchli CF va ikkinchi to‘p uchun kurashadigan yarim himoyachilar bo‘lsa",detail:"To‘g‘ridan-to‘g‘ri uzatmalar va hujumchini tayanch sifatida ishlatish."}
  ];
- $("#tacticOutput").innerHTML='<div class="recommendation-grid"><article class="recommendation-card featured"><span class="label">FORMATION · STARTING POINT</span><h3>'+main+'</h3><p>'+reason+'</p><strong>Taxminiy tavsiya · '+n+' futbolchi kiritildi</strong></article>'+styles.slice(0,2).map((s,i)=>'<article class="recommendation-card"><span class="label">TEAM PLAYSTYLE '+(i+1)+'</span><h3>'+s.name+'</h3><p>'+s.detail+'</p><strong>'+s.fit+'</strong></article>').join("")+'</div><p class="tiny muted" style="margin-top:14px">Cheklov: hozirgi futbolchi jadvalida asosan ism va ro‘yxatdan o‘tgan pozitsiya bor. Shu sababli bu dastlabki tavsiya; tezlik, pas, himoya ko‘rsatkichlari, individual Player Playstyle va manager proficiency qo‘shilgach, aniqroq optimizatsiya qilamiz.</p>';
+ $("#tacticOutput").innerHTML='<div class="recommendation-grid"><article class="recommendation-card featured"><span class="label">FORMATION · STARTING POINT</span><h3>'+main+'</h3><p>'+reason+'</p><strong>Taxminiy tavsiya · '+n+' futbolchi kiritildi</strong></article>'+styles.map((s,i)=>'<article class="recommendation-card"><span class="label">TEAM PLAYSTYLE '+(i+1)+'</span><h3>'+s.name+'</h3><p>'+s.detail+'</p><strong>'+s.fit+'</strong></article>').join("")+'</div><p class="tiny muted" style="margin-top:14px">Cheklov: hozirgi futbolchi jadvalida asosan ism va ro‘yxatdan o‘tgan pozitsiya bor. Shu sababli bu dastlabki tavsiya; tezlik, pas, himoya ko‘rsatkichlari, individual Player Playstyle va manager proficiency qo‘shilgach, aniqroq optimizatsiya qilamiz.</p>';
  $("#recommendations").hidden=false;$("#recommendations").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("#recommendBtn").addEventListener("click",buildRecommendations);
