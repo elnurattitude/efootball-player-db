@@ -94,10 +94,26 @@ aiEndpoint.addEventListener("input",updateAIButton);aiConsent.addEventListener("
 function aiMsg(t){aiStatus.textContent=t;}
 function canvasBlob(canvas){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error("Rasmni siqib bo‘lmadi.")),"image/jpeg",.74));}
 async function makeAIImage(file){
- const src=await preprocess(file),scale=Math.min(1,1350/Math.max(src.width,src.height));
- const c=document.createElement("canvas");c.width=Math.max(1,Math.round(src.width*scale));c.height=Math.max(1,Math.round(src.height*scale));c.getContext("2d").drawImage(src,0,0,c.width,c.height);
- const blob=await canvasBlob(c);if(blob.size>2*1024*1024)throw Error(file.name+" hajmi 2 MB dan katta.");
- const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(",")[1]);r.onerror=()=>reject(Error("Rasm o‘qilmadi."));r.readAsDataURL(blob);});
+ // Vision receives a color-preserving copy; grayscale/contrast processing is reserved for OCR.
+ const src=await new Promise((resolve,reject)=>{
+  const img=new Image(),url=URL.createObjectURL(file);
+  img.onload=()=>{URL.revokeObjectURL(url);resolve(img);};
+  img.onerror=()=>{URL.revokeObjectURL(url);reject(Error("Rasm ochilmadi: "+file.name));};
+  img.src=url;
+ });
+ const scale=Math.min(1,1500/Math.max(src.naturalWidth,src.naturalHeight));
+ const c=document.createElement("canvas");
+ c.width=Math.max(1,Math.round(src.naturalWidth*scale));
+ c.height=Math.max(1,Math.round(src.naturalHeight*scale));
+ c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+ const blob=await canvasBlob(c);
+ if(blob.size>2*1024*1024)throw Error(file.name+" hajmi 2 MB dan katta.");
+ const data=await new Promise((resolve,reject)=>{
+  const r=new FileReader();
+  r.onload=()=>resolve(String(r.result).split(",")[1]);
+  r.onerror=()=>reject(Error("Rasm o‘qilmadi."));
+  r.readAsDataURL(blob);
+ });
  return {name:file.name,mimeType:"image/jpeg",data};
 }
 function ae(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
