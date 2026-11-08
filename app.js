@@ -1,95 +1,93 @@
 (() => {
 "use strict";
-const cfg=window.APP_CONFIG||{}, $=s=>document.querySelector(s);
-const slots=["GK","LB","CB1","CB2","RB","DMF","CMF","AMF","LWF","CF","RWF"];
-const slotLabels={GK:"GK",LB:"LB",CB1:"CB",CB2:"CB",RB:"RB",DMF:"DMF",CMF:"CMF",AMF:"AMF",LWF:"LWF",CF:"CF",RWF:"RWF"};
-const selected={filter:{},sell:{}};
-let activeContext="filter",activeSlot=null,searchTimer=null,listingsCache=[];
-const status=(el,msg)=>{el.textContent=msg};
-if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_PUBLISHABLE_KEY){status($("#listingCount"),"Supabase ulanishi sozlanmagan.");return;}
+const cfg=window.APP_CONFIG||{},$=s=>document.querySelector(s);
+if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_PUBLISHABLE_KEY){$("#uploadStatus").textContent="Supabase ulanishi sozlanmagan.";return;}
 const db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_PUBLISHABLE_KEY);
+let imageFile=null,players=[],worker=null;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const money=v=>new Intl.NumberFormat("uz-UZ").format(Number(v)||0)+" so‘m";
-function updateFormation(context){
- const map=context==="filter"?"#filterFormation":"#sellFormation";
- document.querySelectorAll(map+" .mini-slot").forEach(btn=>{
-  const key=btn.dataset.slot,p=selected[context][key];
-  btn.classList.toggle("filled",!!p);
-  btn.innerHTML=p?'<b>'+esc(p.name.slice(0,9))+'</b><small>'+esc(slotLabels[key])+'</small>':'<b>+</b><small>'+esc(slotLabels[key])+'</small>';
-  btn.title=p?p.name+" — almashtirish yoki olib tashlash":"Futbolchi tanlash";
- });
- const n=Object.keys(selected[context]).length;
- const el=$(context==="filter"?"#selectedCount":"#sellSelectedCount");if(el)el.textContent=n+"/11";
+function setStatus(message){$("#uploadStatus").textContent=message;}
+$("#uploadArea").addEventListener("click",()=>$("#squadFile").click());
+$("#squadFile").addEventListener("change",e=>handleFile(e.target.files?.[0]));
+$("#removeImage").addEventListener("click",()=>{imageFile=null;$("#squadFile").value="";$("#previewWrap").hidden=true;$("#uploadArea").hidden=false;$("#analyzeBtn").disabled=true;setStatus("Rasm olib tashlandi.");});
+function handleFile(file){
+ if(!file)return;
+ if(!/^image\/(png|jpeg|webp)$/.test(file.type)){setStatus("Faqat PNG, JPG yoki WEBP rasm tanlang.");return;}
+ if(file.size>12*1024*1024){setStatus("Rasm hajmi 12 MB dan kichik bo‘lishi kerak.");return;}
+ imageFile=file;$("#preview").src=URL.createObjectURL(file);$("#previewWrap").hidden=false;$("#uploadArea").hidden=true;$("#analyzeBtn").disabled=false;setStatus("Rasm tayyor. Tahlil qilish tugmasini bosing.");
 }
-function openPicker(context,slot){
- activeContext=context;activeSlot=slot;$("#modalTitle").textContent=slotLabels[slot]+" pozitsiyasiga futbolchi tanlash";
- $("#playerSearch").value="";$("#playerResults").innerHTML='<p class="muted">Futbolchi ismini yozing.</p>';
- $("#playerModal").classList.add("open");$("#playerModal").setAttribute("aria-hidden","false");$("#playerSearch").focus();
-}
-function closePicker(){$("#playerModal").classList.remove("open");$("#playerModal").setAttribute("aria-hidden","true");}
-document.querySelectorAll(".mini-formation").forEach(el=>el.addEventListener("click",e=>{
- const btn=e.target.closest(".mini-slot");if(!btn)return;const context=el.id==="sellFormation"?"sell":"filter";openPicker(context,btn.dataset.slot);
-}));
-$("#closeModal").addEventListener("click",closePicker);
-$("#playerModal").addEventListener("click",e=>{if(e.target.dataset.close)closePicker();});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closePicker();});
-async function searchPlayers(term){
- if(term.length<2){$("#playerResults").innerHTML='<p class="muted">Kamida 2 ta harf yozing.</p>';return;}
- $("#playerResults").innerHTML='<p class="muted">Qidirilmoqda…</p>';
- const {data,error}=await db.from("players").select("external_id,name,registered_position").ilike("search_name","%"+term.replace(/[%_]/g,"")+"%").order("name").limit(30);
- if(error){$("#playerResults").innerHTML='<p class="muted">Qidiruv xatosi: '+esc(error.message)+'</p>';return;}
- if(!data?.length){$("#playerResults").innerHTML='<p class="muted">Futbolchi topilmadi.</p>';return;}
- $("#playerResults").innerHTML=data.map(p=>'<div class="player-result"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.registered_position||"Pozitsiya yo‘q")+' · ID '+esc(p.external_id)+'</small></div><button type="button" data-player-id="'+esc(p.external_id)+'" data-player-name="'+esc(p.name)+'" data-player-position="'+esc(p.registered_position||"")+'">Tanlash</button></div>').join("");
-}
-$("#playerSearch").addEventListener("input",()=>{clearTimeout(searchTimer);const term=$("#playerSearch").value.trim();searchTimer=setTimeout(()=>searchPlayers(term),280);});
-$("#playerResults").addEventListener("click",e=>{
- const b=e.target.closest("button[data-player-id]");if(!b)return;
- selected[activeContext][activeSlot]={id:String(b.dataset.playerId),name:b.dataset.playerName,position:b.dataset.playerPosition};
- updateFormation(activeContext);closePicker();
+$("#analyzeBtn").addEventListener("click",async()=>{
+ if(!imageFile)return;
+ const btn=$("#analyzeBtn");btn.disabled=true;btn.textContent="Rasm o‘qilmoqda…";setStatus("OCR ishga tushmoqda. Bir oz kuting…");
+ try{
+  if(!window.Tesseract)throw new Error("OCR kutubxonasi yuklanmadi. Sahifani yangilang.");
+  if(!worker)worker=await Tesseract.createWorker("eng");
+  const result=await worker.recognize(imageFile);
+  const raw=result.data.text||"";
+  $("#ocrText").textContent=raw.trim()||"Matn aniqlanmadi. Rasm tiniqligini tekshiring yoki futbolchilarni qo‘lda qidiring.";
+  $("#resultsSection").hidden=false;
+  await autoFindCandidates(raw);
+  setStatus("Tahlil tugadi. Topilgan futbolchilarni tekshirib, tarkibga qo‘shing.");
+  $("#resultsSection").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(err){console.error(err);setStatus("Tahlil xatosi: "+(err.message||"Noma’lum xato"));}
+ finally{btn.disabled=false;btn.textContent="Qayta tahlil qilish";}
 });
-function selectedIds(context){return Object.values(selected[context]).map(p=>p.id);}
-function selectedNames(players){return Object.values(players).map(p=>p.name);}
-function listingCard(item){
- const players=Array.isArray(item.player_ids)?item.player_ids:[];
- const chips=players.slice(0,8).map(p=>'<span class="player-chip">'+esc(p.name||"Player")+'</span>').join("");
- const photo=item.photo_url?'<img src="'+esc(item.photo_url)+'" alt="Akkaunt rasmi" loading="lazy" referrerpolicy="no-referrer">':'⚽';
- const username=String(item.telegram_username||"").replace(/^@/,"");
- const desc=String(item.description||"").slice(0,130);
- return '<article class="listing-card"><div class="listing-photo">'+photo+'</div><div class="listing-body"><h3>'+esc(item.title)+'</h3><div class="price">'+money(item.price_uzs)+'</div><p class="listing-description">'+esc(desc||"Sotuvchi qo‘shimcha ma’lumot kiritmagan.")+'</p>'+(chips?'<div class="player-chips">'+chips+'</div>':'')+'<div class="listing-actions"><a class="primary" href="https://t.me/'+encodeURIComponent(username)+'" target="_blank" rel="noopener">Sotuvchiga yozish ↗</a><a href="https://t.me/wxetg" target="_blank" rel="noopener">Garant ↗</a></div></div></article>';
+function cleanTerm(s){return String(s||"").replace(/[^a-zA-ZÀ-ÿ' .-]/g," ").replace(/\s+/g," ").trim();}
+async function lookup(term){
+ const q=cleanTerm(term);if(q.length<3)return [];
+ const {data,error}=await db.from("players").select("external_id,name,registered_position").ilike("search_name","%"+q.replace(/[%_]/g,"")+"%").order("name").limit(5);
+ if(error){console.warn(error);return [];}return data||[];
 }
-async function loadListings(){
- $("#listingCount").textContent="E’lonlar yuklanmoqda…";$("#listings").innerHTML='<div class="empty-state">Yuklanmoqda…</div>';
- const {data,error}=await db.from("account_listings").select("id,title,price_uzs,description,telegram_username,photo_url,player_ids,created_at").eq("status","approved").order("created_at",{ascending:false}).limit(150);
- if(error){$("#listingCount").textContent="E’lonlarni yuklashda xatolik";$("#listings").innerHTML='<div class="empty-state">Marketplace jadvali hali sozlanmagan yoki ulanishda xatolik bor. Supabase uchun SQL sozlamasini bajaring.</div>';console.error(error);return;}
- listingsCache=data||[];applyListingFilters();
+async function autoFindCandidates(raw){
+ const lines=raw.split(/\n/).map(cleanTerm).filter(x=>x.length>=4&&x.length<=36&&/[a-zA-Z]{3}/.test(x));
+ const unique=[...new Set(lines)].slice(0,18);let found=[];
+ for(const line of unique){const hits=await lookup(line);found.push(...hits);}
+ const seen=new Set();found=found.filter(p=>{const id=String(p.external_id);if(seen.has(id))return false;seen.add(id);return true;}).slice(0,24);
+ renderSearchResults(found,"OCR bo‘yicha ehtimoliy mosliklar");
 }
-function applyListingFilters(){
- const min=Number($("#minPrice").value)||0,max=Number($("#maxPrice").value)||Infinity,sort=$("#sortPrice").value;
- const wanted=selectedIds("filter");
- let rows=listingsCache.filter(x=>Number(x.price_uzs)>=min&&Number(x.price_uzs)<=max);
- if(wanted.length)rows=rows.filter(x=>{const ids=(Array.isArray(x.player_ids)?x.player_ids:[]).map(p=>String(p.id));return wanted.every(id=>ids.includes(id));});
- if(sort==="low")rows.sort((a,b)=>a.price_uzs-b.price_uzs);
- else if(sort==="high")rows.sort((a,b)=>b.price_uzs-a.price_uzs);
- else rows.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
- $("#listingCount").textContent=rows.length+" ta akkaunt";
- $("#listings").innerHTML=rows.length?rows.map(listingCard).join(""):'<div class="empty-state">Bu filtrlarga mos tasdiqlangan akkaunt topilmadi. Boshqa futbolchi yoki narxni tanlab ko‘ring.</div>';
+function renderSearchResults(rows,label){
+ const box=$("#searchResults");
+ if(!rows.length){box.innerHTML='<p class="tiny muted">Mos futbolchi topilmadi. Ismini qo‘lda qidirib ko‘ring.</p>';return;}
+ box.innerHTML='<p class="tiny muted">'+esc(label)+'</p>'+rows.map(p=>'<div class="player-result"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.registered_position||"Pozitsiya noma’lum")+' · ID '+esc(p.external_id)+'</small></div><button type="button" data-add="'+esc(p.external_id)+'" data-name="'+esc(p.name)+'" data-position="'+esc(p.registered_position||"")+'">Tarkibga qo‘shish</button></div>').join("");
 }
-$("#applyFilters").addEventListener("click",applyListingFilters);
-$("#minPrice").addEventListener("input",applyListingFilters);$("#maxPrice").addEventListener("input",applyListingFilters);$("#sortPrice").addEventListener("change",applyListingFilters);
-$("#resetFilters").addEventListener("click",()=>{$("#minPrice").value="";$("#maxPrice").value="";$("#sortPrice").value="newest";Object.keys(selected.filter).forEach(k=>delete selected.filter[k]);updateFormation("filter");applyListingFilters();});
-$("#refreshListings").addEventListener("click",loadListings);
-$("#listingForm").addEventListener("submit",async e=>{
- e.preventDefault();const btn=$("#submitListing"),msg=$("#formStatus");
- const username=$("#sellerTelegram").value.trim().replace(/^@/,"");
- if(!/^[A-Za-z0-9_]{5,32}$/.test(username)){status(msg,"Telegram username noto‘g‘ri. Masalan: @username");return;}
- const price=Number($("#listingPrice").value);if(!Number.isFinite(price)||price<=0){status(msg,"Narxni to‘g‘ri kiriting.");return;}
- const payload={title:$("#listingTitle").value.trim(),price_uzs:Math.round(price),description:$("#listingDescription").value.trim(),telegram_username:username,photo_url:$("#listingPhoto").value.trim()||null,player_ids:slots.filter(s=>selected.sell[s]).map(s=>({id:selected.sell[s].id,name:selected.sell[s].name,position:slotLabels[s],registered_position:selected.sell[s].position})),status:"pending"};
- btn.disabled=true;btn.textContent="Yuborilmoqda…";status(msg,"E’lon yuborilmoqda…");
- const {error}=await db.from("account_listings").insert(payload);
- btn.disabled=false;btn.textContent="E’lonni moderatsiyaga yuborish ↗";
- if(error){console.error(error);status(msg,"Yuborilmadi: "+error.message+" — avval Supabase SQL sozlamasini bajaring.");return;}
- status(msg,"E’lon qabul qilindi! Admin tekshiruvidan keyin saytda ko‘rinadi.");
- e.target.reset();slots.forEach(s=>delete selected.sell[s]);updateFormation("sell");
+$("#searchBtn").addEventListener("click",manualSearch);
+$("#playerSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();manualSearch();}});
+async function manualSearch(){
+ const term=$("#playerSearch").value.trim();if(term.length<2){$("#searchResults").innerHTML='<p class="tiny muted">Kamida 2 ta harf yozing.</p>';return;}
+ $("#searchResults").innerHTML='<p class="tiny muted">Qidirilmoqda…</p>';
+ const rows=await lookup(term);renderSearchResults(rows,"Qidiruv natijalari");
+}
+$("#searchResults").addEventListener("click",e=>{
+ const b=e.target.closest("button[data-add]");if(!b)return;
+ const id=String(b.dataset.add);if(players.some(p=>String(p.id)===id))return;
+ if(players.length>=11){alert("Tarkibga 11 tadan ortiq futbolchi qo‘shib bo‘lmaydi.");return;}
+ players.push({id,name:b.dataset.name,position:b.dataset.position});renderLineup();
 });
-updateFormation("filter");updateFormation("sell");loadListings();
+function renderLineup(){
+ $("#lineupCount").textContent=players.length+" / 11";
+ $("#recognizedCount").textContent=players.length+" PLAYERS";
+ $("#lineup").innerHTML=players.length?players.map((p,i)=>'<div class="lineup-player"><button class="remove-player" type="button" data-remove="'+i+'" aria-label="O‘chirish">×</button><b>'+esc(p.name)+'</b><small>'+esc(p.position||"Pozitsiya yo‘q")+'</small></div>').join(""):'<p class="muted">Hozircha futbolchi qo‘shilmagan.</p>';
+ $("#recommendBtn").disabled=players.length<1;
+}
+$("#lineup").addEventListener("click",e=>{const b=e.target.closest("button[data-remove]");if(!b)return;players.splice(Number(b.dataset.remove),1);renderLineup();});
+function positionCounts(){
+ const counts={GK:0,DEF:0,MID:0,ATT:0};
+ players.forEach(p=>{const x=String(p.position||"").toUpperCase();if(x.includes("GK"))counts.GK++;else if(["CB","LB","RB","LWB","RWB"].some(v=>x.includes(v)))counts.DEF++;else if(["DMF","CMF","AMF","MF"].some(v=>x.includes(v)))counts.MID++;else if(["CF","SS","LWF","RWF","FW"].some(v=>x.includes(v)))counts.ATT++;});
+ return counts;
+}
+function buildRecommendations(){
+ const c=positionCounts(),n=players.length;
+ let main="4-2-1-3",reason="Ikki tayanch yarim himoyachi va uch hujumchi bilan muvozanatli boshlang‘ich variant.";
+ if(c.ATT>=4&&c.MID>=3) {main="4-3-3";reason="Hujumchilar va yarim himoyachilar soni qanotlar orqali hujum qilishga mos keladi.";}
+ if(c.MID>=4&&c.ATT<=2){main="4-3-2-1";reason="Yarim himoyada ko‘proq futbolchi bor; markazni zichlashtirish mumkin.";}
+ const styles=[
+  {name:"Quick Counter",fit:"Tezkor CF/LWF/RWF va yuqori pressingni yoqtirsangiz",detail:"Tez hujumga chiqish va raqib himoyasi ortiga yugurish."},
+  {name:"Possession Game",fit:"Pas, to‘p nazorati va texnik CMF/AMF futbolchilaringiz kuchli bo‘lsa",detail:"Qisqa paslar va sabrli hujum qurilishi."},
+  {name:"Long Ball Counter",fit:"Mustahkam CB/DMF va tezkor qarshi hujumchilar bo‘lsa",detail:"Himoyada ixcham turish va to‘pni qaytarib tez hujum qilish."},
+  {name:"Out Wide",fit:"Kuchli LWF/RWF va hujumkor qanot himoyachilaringiz bo‘lsa",detail:"Qanotlardan foydalanish va jarima maydoniga uzatmalar."}
+ ];
+ $("#tacticOutput").innerHTML='<div class="recommendation-grid"><article class="recommendation-card featured"><span class="label">FORMATION · STARTING POINT</span><h3>'+main+'</h3><p>'+reason+'</p><strong>Taxminiy tavsiya · '+n+' futbolchi kiritildi</strong></article>'+styles.slice(0,2).map((s,i)=>'<article class="recommendation-card"><span class="label">TEAM PLAYSTYLE '+(i+1)+'</span><h3>'+s.name+'</h3><p>'+s.detail+'</p><strong>'+s.fit+'</strong></article>').join("")+'</div><p class="tiny muted" style="margin-top:14px">Cheklov: hozirgi futbolchi jadvalida asosan ism va ro‘yxatdan o‘tgan pozitsiya bor. Shu sababli bu dastlabki tavsiya; tezlik, pas, himoya ko‘rsatkichlari, individual Player Playstyle va manager proficiency qo‘shilgach, aniqroq optimizatsiya qilamiz.</p>';
+ $("#recommendations").hidden=false;$("#recommendations").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("#recommendBtn").addEventListener("click",buildRecommendations);
+renderLineup();
 })();
