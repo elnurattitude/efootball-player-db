@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="eFootball futbolchilari bazasi — ism va pozitsiya bo‘yicha qidiruv.">
   <title>eFootball Player Database</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -18,7 +18,6 @@
       </div>
       <div class="count" id="result-count">Yuklanmoqda…</div>
     </header>
-
     <section class="filters" aria-label="Futbolchilar qidiruvi">
       <label class="search">
         <span>Futbolchi ismi</span>
@@ -30,7 +29,6 @@
       </label>
       <button id="clear" class="secondary" type="button">Tozalash</button>
     </section>
-
     <p id="status" class="status" role="status">Ma’lumotlar bazasiga ulanmoqda…</p>
     <section id="players" class="players" aria-live="polite"></section>
     <div class="pagination">
@@ -40,7 +38,7 @@
     </div>
     <footer>Mustaqil hamjamiyat loyihasi. KONAMI bilan bog‘liq emas.</footer>
   </main>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=1"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
