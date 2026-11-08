@@ -13,14 +13,17 @@ export default {async fetch(request,env){
  if(!env.GEMINI_API_KEY)return json({error:"Serverda GEMINI_API_KEY secret sozlanmagan."},500);
  if(Number(request.headers.get("Content-Length")||0)>MAX_BODY_BYTES)return json({error:"So‘rov 8 MB limitdan oshdi."},413);
  try{
-  const input=await request.json();
+  const rawBody=await request.text();
+  if(new TextEncoder().encode(rawBody).byteLength>MAX_BODY_BYTES)return json({error:"So‘rov 8 MB limitdan oshdi."},413);
+  let input;
+  try{input=JSON.parse(rawBody);}catch{return json({error:"JSON so‘rovi noto‘g‘ri."},400);}
   if(!Array.isArray(input.images)||input.images.length<1||input.images.length>6)return json({error:"1–6 ta rasm yuborish mumkin."},400);
   const prompt=`You are an expert eFootball squad screenshot analyst and tactical coach. Analyze ONLY supplied screenshots and optional OCR text. Do not use or claim access to an external player database. Identify visible player cards, names, positions, overall ratings, card types, playing styles, manager name and manager/team playstyle only when legible. Never invent uncertain names, ratings, positions, stats or manager details. Use null or "unknown" for uncertain fields and low confidence. Distinguish detected current formation/playstyle from recommendations. Recommend a practical formation and Team Playstyle based on confirmed players and visible positions. If evidence is insufficient, say so and keep advice provisional. Return ONLY valid JSON with this structure:
 {"overview":"Uzbek summary","manager":{"name":null,"playstyle":null,"confidence":"low","notes":""},"formation_detected":null,"team_playstyle_detected":null,"players":[{"name":"","position":"","rating":null,"card_type":"","playing_style":"","screenshot_section":"","confidence":"low","notes":""}],"recommended_formation":"","recommended_team_playstyle":"","tactical_setup":{"attacking_style":"","build_up":"","attacking_area":"","positioning":"","defensive_style":"","containment_area":"","pressuring":"","defensive_line":""},"player_roles":[{"position":"","player_name":"","reason":""}],"key_strengths":[],"weaknesses":[],"changes_to_make":[],"uncertainties":[]}
 Write explanations in Uzbek. Keep player names as shown in-game. Do not guess unreadable fields.`;
   const parts=[{text:prompt}];
   for(const image of input.images){
-   if(typeof image.data!=="string"||image.data.length>2800000)return json({error:"Rasm juda katta yoki noto‘g‘ri."},400);
+   if(typeof image.data!=="string"||image.data.length<100||image.data.length>2800000||!/^[A-Za-z0-9+/]+={0,2}$/.test(image.data))return json({error:"Rasm ma’lumoti juda katta yoki noto‘g‘ri."},400);
    if(!["image/jpeg","image/png","image/webp"].includes(image.mimeType))return json({error:"Faqat JPEG, PNG yoki WEBP."},400);
    parts.push({text:"Screenshot section: "+String(image.section||"unknown")+"; filename: "+String(image.name||"image")});
    parts.push({inline_data:{mime_type:image.mimeType,data:image.data}});
