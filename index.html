@@ -5,7 +5,7 @@
 <meta name="description" content="eFootball tarkib skrinshotlari asosida mustaqil taktika tahlili.">
 <title>eFOOT TACTICS — Squad Intelligence</title>
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
@@ -25,10 +25,10 @@
 </div>
 <div class="category-card all-text-card"><label for="allText">OCR O‘QIGAN BARCHA MATN · TAHRIRLASH UCHUN</label><textarea id="allText" rows="8" placeholder="Tahlil qilingan rasmlardan olingan barcha matn..."></textarea><p class="tiny muted">OCR matnni o‘qiydi, ammo futbolchi kartasi tasvirini ishonchli identifikatsiya qilmaydi. Xatolarni qo‘lda tuzating.</p></div>
 <button id="prepareBtn" class="btn btn-gold full-btn" type="button">Ma’lumotlarni saqlab, tekshirish ↗</button><p id="reviewStatus" class="status" role="status"></p>
-<div id="reviewPanel" class="review-panel" hidden><h3>Tarkib ma’lumotlari jamlandi</h3><p class="muted">Keyingi bosqichda futbolchi pozitsiyalari, o‘yinchi kartalari va murabbiy Playstyle ko‘rsatkichlari asosida haqiqiy taktika optimizatori ulanadi. Hozircha OCR natijasi tasdiqlash uchun tayyor.</p><div id="summaryCounts" class="summary-counts"></div></div>
+<div id="reviewPanel" class="review-panel" hidden><h3>Tarkib ma’lumotlari jamlandi</h3><p class="muted">Bu OCR tekshiruvi. Haqiqiy vizual karta va taktika natijalari quyidagi AI tahlilida ko‘rsatiladi.</p><div id="summaryCounts" class="summary-counts"></div></div>
 <div class="ai-connect-card">
  <p class="eyebrow">03 / AI VISION + TACTICAL ENGINE</p><h3>AI bilan haqiqiy tarkib tahlili</h3>
- <p class="muted">AI skrinshotlarning o‘zini ko‘rib, futbolchilar, pozitsiyalar, murabbiy va ko‘rinadigan Playstyle ma’lumotlarini ajratadi. Keyin tarkibga mos taktika taklif qiladi.</p>
+ <p class="muted">AI skrinshotdagi haqiqiy futbolchi kartalarini ajratishga, maydondagi joylashuvni chizishga va tarkibga mos taktika tavsiya qilishga harakat qiladi.</p>
  <label class="ai-field-label" for="aiEndpoint">Cloudflare Worker manzili</label>
  <input id="aiEndpoint" class="ai-endpoint" type="url" value="https://efoot-tactics-ai.elnurbekmirzayev0.workers.dev/analyze" placeholder="https://your-worker.your-subdomain.workers.dev/analyze" autocomplete="url">
  <label class="ai-consent"><input id="aiConsent" type="checkbox"><span>Roziman: skrinshotlar AI tahlili uchun Google Gemini xizmatiga yuboriladi. Gemini bepul tarifida so‘rovlar mahsulotlarni yaxshilash uchun ishlatilishi mumkin. Login, QR-kod yoki shaxsiy ma’lumot yubormang.</span></label>
@@ -38,5 +38,5 @@
 </div></section>
 <section id="guide" class="section guide"><p class="eyebrow">HOW IT WORKS</p><h2>Uch qadamda <span>tarkib tahlili</span></h2><div class="guide-grid"><article><b>01</b><h3>Skrinshotlarni yuklang</h3><p>Asosiy tarkib, zaxira, Reserve va murabbiy rasmlarini qo‘shing.</p></article><article><b>02</b><h3>OCR natijasini tekshiring</h3><p>Matnni to‘g‘rilang va ma’lumotlarni tegishli bo‘limlarga ajrating.</p></article><article><b>03</b><h3>Taktika tahliliga tayyorlang</h3><p>Tasdiqlangan tarkib keyingi taktik optimizator uchun asos bo‘ladi.</p></article></div><p class="disclaimer">Mustaqil hamjamiyat loyihasi. KONAMI yoki eFootball bilan rasmiy aloqasi yo‘q. OCR rasmlarni brauzerda qayta ishlaydi. AI tahlili yoqilganda va rozilik berilganda tanlangan rasmlar tashqi AI xizmatiga yuboriladi.</p></section>
 </main><footer><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>TACTICS</b></span></a><span>Independent community project · © 2026</span></footer>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body></html>
