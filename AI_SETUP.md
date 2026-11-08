@@ -1,4 +1,4 @@
-# eFOOT TACTICS — Gemini Vision setup
+# eFOOT TACTICS — Gemini Vision setup (updated)
 
 ## 1. Gemini API key
 Google AI Studio: https://aistudio.google.com/app/apikey
