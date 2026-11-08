@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="uz">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="eFootball futbolchilari bazasi — ism va pozitsiya bo‘yicha qidiruv.">
   <title>eFootball Player Database</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,39 +14,31 @@
       <div>
         <p class="eyebrow">PLAYER DATABASE</p>
         <h1>eFootball <span>Players</span></h1>
-        <p class="sub">Search the player catalogue by name, position, nationality or rating.</p>
+        <p class="sub">104 mingdan ortiq futbolchini ism yoki pozitsiya bo‘yicha qidiring.</p>
       </div>
-      <div class="count" id="result-count">Loading…</div>
+      <div class="count" id="result-count">Yuklanmoqda…</div>
     </header>
 
-    <section class="filters" aria-label="Player search">
+    <section class="filters" aria-label="Futbolchilar qidiruvi">
       <label class="search">
-        <span>Search players</span>
-        <input id="search" type="search" placeholder="Player name…" autocomplete="off">
+        <span>Futbolchi ismi</span>
+        <input id="search" type="search" placeholder="Masalan: Yohei Sato…" autocomplete="off">
       </label>
       <label>
-        <span>Position</span>
-        <select id="position"><option value="">All positions</option></select>
+        <span>Pozitsiya</span>
+        <select id="position"><option value="">Barcha pozitsiyalar</option></select>
       </label>
-      <label>
-        <span>Minimum rating</span>
-        <select id="rating">
-          <option value="">Any rating</option>
-          <option value="90">90+</option><option value="95">95+</option>
-          <option value="100">100+</option>
-        </select>
-      </label>
-      <button id="clear" class="secondary" type="button">Clear</button>
+      <button id="clear" class="secondary" type="button">Tozalash</button>
     </section>
 
-    <p id="status" class="status" role="status">Connecting to database…</p>
+    <p id="status" class="status" role="status">Ma’lumotlar bazasiga ulanmoqda…</p>
     <section id="players" class="players" aria-live="polite"></section>
     <div class="pagination">
-      <button id="previous" class="secondary" type="button" disabled>Previous</button>
-      <span id="page-label">Page 1</span>
-      <button id="next" class="secondary" type="button" disabled>Next</button>
+      <button id="previous" class="secondary" type="button" disabled>Oldingi</button>
+      <span id="page-label">1-sahifa</span>
+      <button id="next" class="secondary" type="button" disabled>Keyingi</button>
     </div>
-    <footer>Independent community catalogue. Not affiliated with KONAMI.</footer>
+    <footer>Mustaqil hamjamiyat loyihasi. KONAMI bilan bog‘liq emas.</footer>
   </main>
   <script src="config.js"></script>
   <script src="app.js"></script>
