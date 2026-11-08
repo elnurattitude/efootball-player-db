@@ -86,4 +86,51 @@ $("#prepareBtn").addEventListener("click",()=>{
  $("#reviewPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
 });
 window.addEventListener("beforeunload",()=>files.forEach(revoke));
+
+/* Gemini Vision: the API key is stored only as a Cloudflare Worker secret. */
+const aiEndpoint=$("#aiEndpoint"),aiConsent=$("#aiConsent"),aiButton=$("#aiAnalyzeBtn"),aiStatus=$("#aiStatus"),aiResult=$("#aiResult");
+function updateAIButton(){aiButton.disabled=!(aiEndpoint.value.trim().startsWith("https://")&&aiConsent.checked&&!busy);}
+aiEndpoint.addEventListener("input",updateAIButton);aiConsent.addEventListener("change",updateAIButton);
+function aiMsg(t){aiStatus.textContent=t;}
+function canvasBlob(canvas){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error("Rasmni siqib bo‘lmadi.")),"image/jpeg",.74));}
+async function makeAIImage(file){
+ const src=await preprocess(file),scale=Math.min(1,1350/Math.max(src.width,src.height));
+ const c=document.createElement("canvas");c.width=Math.max(1,Math.round(src.width*scale));c.height=Math.max(1,Math.round(src.height*scale));c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+ const blob=await canvasBlob(c);if(blob.size>2*1024*1024)throw Error(file.name+" hajmi 2 MB dan katta.");
+ const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(",")[1]);r.onerror=()=>reject(Error("Rasm o‘qilmadi."));r.readAsDataURL(blob);});
+ return {name:file.name,mimeType:"image/jpeg",data};
+}
+function ae(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function showAI(d){
+ const players=Array.isArray(d.players)?d.players:[];
+ const phtml=players.map(p=>'<div class="ai-player"><b>'+ae(p.name||"Noma’lum futbolchi")+'</b><span>'+ae(p.position||"Pozitsiya noma’lum")+' · '+ae(p.rating??"—")+'</span><small>'+ae(p.card_type||"Kartasi aniqlanmadi")+' · ishonch: '+ae(p.confidence||"past")+'</small></div>').join("");
+ const t=d.tactical_setup||{},thtml=Object.entries(t).map(([k,v])=>'<div class="ai-tactic"><b>'+ae(k.replaceAll("_"," "))+'</b><span>'+ae(Array.isArray(v)?v.join(", "):v)+'</span></div>').join("");
+ const ul=x=>Array.isArray(x)?x.map(v=>"<li>"+ae(typeof v==="string"?v:JSON.stringify(v))+"</li>").join(""):"";
+ aiResult.innerHTML='<span class="eyebrow">GEMINI VISION ANALYSIS</span><h3>AI tahlil natijasi</h3><p>'+ae(d.overview||"Tahlil yakunlandi.")+'</p>'+
+ '<div class="ai-highlights"><div><small>Tavsiya etilgan sxema</small><b>'+ae(d.recommended_formation||"Aniqlanmadi")+'</b></div><div><small>Team Playstyle</small><b>'+ae(d.recommended_team_playstyle||"Aniqlanmadi")+'</b></div><div><small>Murabbiy</small><b>'+ae(d.manager?.name||"Aniqlanmadi")+'</b></div></div>'+
+ '<h4>Aniqlangan futbolchilar ('+players.length+')</h4><div class="ai-player-grid">'+(phtml||'<p class="muted">Futbolchilar aniqlanmadi.</p>')+'</div>'+
+ '<h4>Taktik sozlamalar</h4><div class="ai-tactics-grid">'+(thtml||'<p class="muted">Taktika qaytmadi.</p>')+'</div>'+
+ '<h4>O‘zgartirish tavsiyalari</h4><ul>'+ul(d.changes_to_make)+'</ul><h4>Kuchli tomonlar</h4><ul>'+ul(d.key_strengths)+'</ul><h4>Zaif tomonlar</h4><ul>'+ul(d.weaknesses)+'</ul><h4>Aniqlik talab qiladigan joylar</h4><ul>'+ul(d.uncertainties)+'</ul>'+
+ '<p class="tiny muted">AI xato qilishi mumkin. Kartalar, reytinglar va murabbiy ma’lumotlarini o‘yin ichida tekshiring.</p><details><summary>To‘liq AI javobi</summary><pre>'+ae(JSON.stringify(d,null,2))+'</pre></details>';
+ aiResult.hidden=false;
+}
+aiButton.addEventListener("click",async()=>{
+ if(busy||!files.length||!aiConsent.checked)return;
+ if(files.length>6){aiMsg("Bir urinishda ko‘pi bilan 6 ta rasm yuboring.");return;}
+ busy=true;aiButton.disabled=true;aiButton.textContent="AI tahlil qilmoqda…";aiResult.hidden=true;
+ try{
+  const images=[];
+  for(let i=0;i<files.length;i++){aiMsg("Rasm tayyorlanmoqda "+(i+1)+"/"+files.length+"…");images.push({...await makeAIImage(files[i].file),section:files[i].type});}
+  const body=JSON.stringify({images,ocr:{startingXI:$("#startingText").value,bench:$("#benchText").value,reserve:$("#reserveText").value,manager:$("#managerText").value}});
+  if(body.length>8*1024*1024)throw Error("Yuboriladigan ma’lumot 8 MB dan oshdi. Kamroq rasm tanlang.");
+  aiMsg("Gemini rasmlarni tahlil qilmoqda…");
+  const res=await fetch(aiEndpoint.value.trim(),{method:"POST",headers:{"Content-Type":"application/json"},body});
+  const out=await res.json().catch(()=>({error:"Serverdan noto‘g‘ri javob keldi."}));
+  if(!res.ok)throw Error(out.error||("Server xatosi: "+res.status));
+  if(!out.analysis)throw Error("AI javobida tahlil topilmadi.");
+  showAI(out.analysis);aiMsg("AI tahlili tayyor. Natijani tekshirib chiqing.");aiResult.scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(e){console.error(e);aiMsg("AI xatosi: "+(e.message||"Noma’lum xato"));}
+ finally{busy=false;aiButton.textContent="AI bilan qayta tahlil qilish ✦";updateAIButton();}
+});
+
 })();
