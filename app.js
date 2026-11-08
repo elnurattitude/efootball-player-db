@@ -117,21 +117,50 @@ async function makeAIImage(file){
  return {name:file.name,mimeType:"image/jpeg",data};
 }
 function ae(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-function showAI(d){
+async function cropPlayerCard(p){
+ const idx=Number.isInteger(p.image_index)?p.image_index:0;
+ const source=files[idx];
+ const box=Array.isArray(p.bbox)?p.bbox.map(Number):null;
+ if(!source||!box||box.length!==4||box.some(v=>!Number.isFinite(v)))return "";
+ const img=await new Promise((resolve,reject)=>{
+  const el=new Image();el.onload=()=>resolve(el);el.onerror=reject;el.src=source.url;
+ });
+ const [nx,ny,nw,nh]=box.map(v=>Math.max(0,Math.min(1000,v)));
+ const sx=Math.round(img.naturalWidth*nx/1000),sy=Math.round(img.naturalHeight*ny/1000);
+ const sw=Math.max(1,Math.min(img.naturalWidth-sx,Math.round(img.naturalWidth*nw/1000)));
+ const sh=Math.max(1,Math.min(img.naturalHeight-sy,Math.round(img.naturalHeight*nh/1000)));
+ if(sw<8||sh<8)return "";
+ const c=document.createElement("canvas");c.width=180;c.height=240;
+ c.getContext("2d").drawImage(img,sx,sy,sw,sh,0,0,180,240);
+ return c.toDataURL("image/jpeg",.82);
+}
+async function showAI(d){
  const players=Array.isArray(d.players)?d.players:[];
- const phtml=players.map(p=>'<div class="ai-player"><b>'+ae(p.name||"Noma’lum futbolchi")+'</b><span>'+ae(p.position||"Pozitsiya noma’lum")+' · '+ae(p.rating??"—")+'</span><small>'+ae(p.card_type||"Kartasi aniqlanmadi")+' · ishonch: '+ae(p.confidence||"past")+'</small></div>').join("");
+ const crops=await Promise.all(players.map(p=>cropPlayerCard(p).catch(()=> "")));
+ const phtml=players.map((p,i)=>'<article class="visual-player-card">'+(crops[i]?'<img class="player-card-art" src="'+crops[i]+'" alt="'+ae(p.name||"Futbolchi kartasi")+'">':'<div class="player-card-placeholder"><span>eF</span><small>Karta rasmi aniqlanmadi</small></div>')+'<div class="visual-player-info"><b>'+ae(p.name||"Noma’lum futbolchi")+'</b><span>'+ae(p.position||"Pozitsiya noma’lum")+' <strong>'+(p.rating==null?"—":ae(p.rating))+'</strong></span><small>'+ae(p.card_type||"Karta turi noma’lum")+' · '+ae(p.playing_style||"Playstyle noma’lum")+'</small><em>Ishonch: '+ae(p.confidence||"past")+'</em></div></article>').join("");
  const t=d.tactical_setup||{},thtml=Object.entries(t).map(([k,v])=>'<div class="ai-tactic"><b>'+ae(k.replaceAll("_"," "))+'</b><span>'+ae(Array.isArray(v)?v.join(", "):v)+'</span></div>').join("");
  const roles=Array.isArray(d.player_roles)?d.player_roles:[];
  const rhtml=roles.map(r=>'<div class="ai-tactic"><b>'+ae(r.position||"Pozitsiya")+'</b><span>'+ae(r.player_name||"Noma’lum futbolchi")+' — '+ae(r.reason||"")+'</span></div>').join("");
+ const layout=Array.isArray(d.formation_layout)?d.formation_layout:[];
+ const pitchCards=layout.map(s=>{
+  const p=players.find(x=>(x.name||"").toLowerCase()===(s.player_name||"").toLowerCase());
+  if(!p)return "";
+  const x=Math.max(4,Math.min(96,Number(s.x)||50)),y=Math.max(5,Math.min(94,Number(s.y)||50));
+  const idx=players.indexOf(p),src=crops[idx];
+  return '<div class="pitch-player" style="left:'+x+'%;top:'+y+'%">'+(src?'<img src="'+src+'" alt="">':'<span class="pitch-initial">'+ae((p.name||"?").slice(0,1))+'</span>')+'<b>'+ae(p.name||"Player")+'</b><small>'+ae(s.position||p.position||"")+'</small></div>';
+ }).join("");
+ const pitch=layout.length?'<div class="formation-board"><div class="formation-lines"><i></i><i></i><i></i><i></i></div>'+pitchCards+'</div>':'<div class="formation-empty">AI maydondagi aniq koordinatalarni ajrata olmadi. Futbolchi kartalari quyida ko‘rsatilgan.</div>';
  const ul=x=>Array.isArray(x)?x.map(v=>"<li>"+ae(typeof v==="string"?v:JSON.stringify(v))+"</li>").join(""):"";
- aiResult.innerHTML='<span class="eyebrow">GEMINI VISION ANALYSIS</span><h3>AI tahlil natijasi</h3><p>'+ae(d.overview||"Tahlil yakunlandi.")+'</p>'+
+ aiResult.innerHTML='<div class="analysis-topline"><span class="eyebrow">eFOOT TACTICS / VISION REPORT</span><span class="live-tag">AI ANALYSIS</span></div><h3>Squad intelligence</h3><p>'+ae(d.overview||"Tahlil yakunlandi.")+'</p>'+
  '<div class="ai-highlights"><div><small>Tavsiya etilgan sxema</small><b>'+ae(d.recommended_formation||"Aniqlanmadi")+'</b></div><div><small>Team Playstyle</small><b>'+ae(d.recommended_team_playstyle||"Aniqlanmadi")+'</b></div><div><small>Murabbiy</small><b>'+ae(d.manager?.name||"Aniqlanmadi")+'</b></div></div>'+
+ '<h4>TACTICAL BOARD · '+ae(d.recommended_formation||"FORMATION")+'</h4>'+pitch+
+ '<h4>PLAYER CARDS · '+players.length+'</h4><div class="visual-player-grid">'+(phtml||'<p class="muted">Futbolchilar aniqlanmadi.</p>')+'</div>'+
  '<h4>Hozirgi holat</h4><p class="muted">Aniqlangan sxema: '+ae(d.formation_detected||"Noma’lum")+' · Aniqlangan Team Playstyle: '+ae(d.team_playstyle_detected||"Noma’lum")+'</p>'+
- '<h4>Aniqlangan futbolchilar ('+players.length+')</h4><div class="ai-player-grid">'+(phtml||'<p class="muted">Futbolchilar aniqlanmadi.</p>')+'</div>'+
- '<h4>Taktik sozlamalar</h4><div class="ai-tactics-grid">'+(thtml||'<p class="muted">Taktika qaytmadi.</p>')+'</div>'+
- '<h4>Joylashuv va futbolchi rollari</h4><div class="ai-tactics-grid">'+(rhtml||'<p class="muted">Rollar qaytmadi.</p>')+'</div>'+
- '<h4>O‘zgartirish tavsiyalari</h4><ul>'+ul(d.changes_to_make)+'</ul><h4>Kuchli tomonlar</h4><ul>'+ul(d.key_strengths)+'</ul><h4>Zaif tomonlar</h4><ul>'+ul(d.weaknesses)+'</ul><h4>Aniqlik talab qiladigan joylar</h4><ul>'+ul(d.uncertainties)+'</ul>'+
- '<p class="tiny muted">AI xato qilishi mumkin. Kartalar, reytinglar va murabbiy ma’lumotlarini o‘yin ichida tekshiring.</p><details><summary>To‘liq AI javobi</summary><pre>'+ae(JSON.stringify(d,null,2))+'</pre></details>';
+ '<h4>TACTICAL SETTINGS</h4><div class="ai-tactics-grid">'+(thtml||'<p class="muted">Taktika qaytmadi.</p>')+'</div>'+
+ '<h4>PLAYER ROLES</h4><div class="ai-tactics-grid">'+(rhtml||'<p class="muted">Rollar qaytmadi.</p>')+'</div>'+
+ '<div class="analysis-columns"><section><h4>Kuchli tomonlar</h4><ul>'+ul(d.key_strengths)+'</ul></section><section><h4>Zaif tomonlar</h4><ul>'+ul(d.weaknesses)+'</ul></section></div>'+
+ '<h4>O‘zgartirish tavsiyalari</h4><ul>'+ul(d.changes_to_make)+'</ul><h4>Aniqlik talab qiladigan joylar</h4><ul>'+ul(d.uncertainties)+'</ul>'+
+ '<p class="tiny muted">Karta rasmlari faqat yuklangan skrinshotlardan kesib olindi. AI aniqligi skrinshot sifati va ko‘rinishiga bog‘liq; o‘yin ichida tekshiring.</p><details><summary>To‘liq AI javobi</summary><pre>'+ae(JSON.stringify(d,null,2))+'</pre></details>';
  aiResult.hidden=false;
 }
 aiButton.addEventListener("click",async()=>{
@@ -148,7 +177,7 @@ aiButton.addEventListener("click",async()=>{
   const out=await res.json().catch(()=>({error:"Serverdan noto‘g‘ri javob keldi."}));
   if(!res.ok)throw Error(out.error||("Server xatosi: "+res.status));
   if(!out.analysis)throw Error("AI javobida tahlil topilmadi.");
-  showAI(out.analysis);aiMsg("AI tahlili tayyor. Natijani tekshirib chiqing.");aiResult.scrollIntoView({behavior:"smooth",block:"start"});
+  await showAI(out.analysis);aiMsg("AI tahlili tayyor. Natijani tekshirib chiqing.");aiResult.scrollIntoView({behavior:"smooth",block:"start"});
  }catch(e){
   console.error(e);
   const msg=e?.message||"Noma’lum xato";
