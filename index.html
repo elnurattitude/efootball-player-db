@@ -1,69 +1,26 @@
 <!doctype html>
 <html lang="uz">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="eFootball akkauntlarini futbolchilar tarkibi va narxi bo‘yicha toping.">
-  <title>eFOOT Market — eFootball Account Marketplace</title>
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-  <link rel="stylesheet" href="styles.css?v=3">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="eFootball tarkibingiz uchun taktika va Playstyle tavsiyalari.">
+<title>eFOOT TACTICS — Squad Analyzer</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="stylesheet" href="styles.css?v=4">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
-  <div class="topbar"><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>MARKET</b></span></a><nav><a href="#market">Akkauntlar</a><a href="#how">Qanday ishlaydi?</a><a class="guarantor-link" href="https://t.me/wxetg" target="_blank" rel="noopener">Garant: @wxetg ↗</a></nav></div>
-  <main>
-    <section class="hero">
-      <div class="hero-copy"><p class="eyebrow">eFOOTBALL ACCOUNT MARKETPLACE</p><h1>O‘zing istagan<br><span>tarkibni top.</span></h1><p class="hero-sub">Kerakli futbolchilar bor akkauntni top yoki o‘z akkauntingni hamjamiyatga taklif qil.</p><div class="hero-actions"><a class="btn btn-gold" href="#market">Akkaunt qidirish <span>↗</span></a><a class="text-link" href="#sell">Akkaunt joylashtirish</a></div><div class="trust-line"><span class="trust-dot"></span> E’lonlar admin tekshiruvidan so‘ng chiqariladi</div></div>
-      <div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-ball">⚽</div><div class="hero-tag tag-top">BUILD YOUR SQUAD</div><div class="hero-tag tag-bottom">FIND YOUR ACCOUNT</div></div>
-    </section>
-    <section id="market" class="section">
-      <div class="section-heading"><div><p class="eyebrow">MARKETPLACE</p><h2>Akkauntlarni <span>qidirish</span></h2><p class="muted">Tarkibdagi futbolchilar yoki narx orqali mos akkauntlarni toping.</p></div><div class="live-label"><i></i> E’lonlar</div></div>
-      <div class="market-layout">
-        <aside class="filter-panel">
-          <div class="panel-title"><h3>Qidiruv filtrlari</h3><button id="resetFilters" class="plain-btn">Tozalash</button></div>
-          <label class="field-label">Minimal narx (so‘m)<input id="minPrice" type="number" min="0" placeholder="Masalan, 100000"></label>
-          <label class="field-label">Maksimal narx (so‘m)<input id="maxPrice" type="number" min="0" placeholder="Masalan, 1000000"></label>
-          <label class="field-label">Saralash<select id="sortPrice"><option value="newest">Avval yangilari</option><option value="low">Arzonidan qimmatiga</option><option value="high">Qimmatidan arzoniga</option></select></label>
-          <div class="filter-divider"></div><div class="panel-title"><h3>Futbolchi bo‘yicha</h3><span class="selected-count" id="selectedCount">0/11</span></div>
-          <p class="tiny muted">Maydondagi + tugmasini bosib kerakli futbolchilarni tanlang.</p>
-          <div class="mini-formation" id="filterFormation">
-            <div class="pitch-line"></div>
-            <div class="slot-row"><button class="mini-slot" data-slot="LWF"><b>+</b><small>LWF</small></button><button class="mini-slot" data-slot="CF"><b>+</b><small>CF</small></button><button class="mini-slot" data-slot="RWF"><b>+</b><small>RWF</small></button></div>
-            <div class="slot-row"><button class="mini-slot" data-slot="AMF"><b>+</b><small>AMF</small></button></div>
-            <div class="slot-row"><button class="mini-slot" data-slot="CMF"><b>+</b><small>CMF</small></button><button class="mini-slot" data-slot="DMF"><b>+</b><small>DMF</small></button></div>
-            <div class="slot-row"><button class="mini-slot" data-slot="LB"><b>+</b><small>LB</small></button><button class="mini-slot" data-slot="CB1"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="CB2"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="RB"><b>+</b><small>RB</small></button></div>
-            <div class="slot-row"><button class="mini-slot" data-slot="GK"><b>+</b><small>GK</small></button></div>
-          </div>
-          <button id="applyFilters" class="btn btn-gold full-btn">Akkauntlarni topish</button>
-        </aside>
-        <div class="results-area"><div class="results-toolbar"><span id="listingCount">E’lonlar yuklanmoqda…</span><button id="refreshListings" class="plain-btn">↻ Yangilash</button></div><div id="listings" class="listing-grid"><div class="empty-state">E’lonlar yuklanmoqda…</div></div></div>
-      </div>
-    </section>
-    <section id="sell" class="section sell-section"><div class="section-heading"><div><p class="eyebrow">FOR SELLERS</p><h2>Akkauntingni <span>joylashtir</span></h2><p class="muted">Ma’lumotlarni to‘ldir, tarkibni tanla va e’lonni moderatsiyaga yubor.</p></div></div>
-      <div class="sell-card"><form id="listingForm">
-        <div class="form-grid">
-          <label class="field-label">E’lon sarlavhasi<input id="listingTitle" maxlength="90" required placeholder="Masalan: Epic va Big Time futbolchilar bor akkaunt"></label>
-          <label class="field-label">Narxi (so‘m)<input id="listingPrice" type="number" min="1" required placeholder="Masalan: 750000"></label>
-          <label class="field-label span-two">Akkaunt haqida ma’lumot<textarea id="listingDescription" maxlength="1200" rows="4" placeholder="Akkaunt tarkibi, platformasi va boshqa muhim ma’lumotlar…"></textarea></label>
-          <label class="field-label">Telegram username<input id="sellerTelegram" required placeholder="@username"></label>
-          <label class="field-label">Rasm havolasi (ixtiyoriy)<input id="listingPhoto" type="url" placeholder="https://…"></label>
-        </div>
-        <div class="sell-line"><div><b>Akkauntdagi futbolchilar</b><p class="tiny muted">Quyidagi 11 talikdan futbolchilarni tanlashing mumkin.</p></div><span class="selected-count" id="sellSelectedCount">0/11</span></div>
-        <div class="mini-formation sell-formation" id="sellFormation">
-          <div class="pitch-line"></div>
-          <div class="slot-row"><button class="mini-slot" data-slot="LWF"><b>+</b><small>LWF</small></button><button class="mini-slot" data-slot="CF"><b>+</b><small>CF</small></button><button class="mini-slot" data-slot="RWF"><b>+</b><small>RWF</small></button></div>
-          <div class="slot-row"><button class="mini-slot" data-slot="AMF"><b>+</b><small>AMF</small></button></div>
-          <div class="slot-row"><button class="mini-slot" data-slot="CMF"><b>+</b><small>CMF</small></button><button class="mini-slot" data-slot="DMF"><b>+</b><small>DMF</small></button></div>
-          <div class="slot-row"><button class="mini-slot" data-slot="LB"><b>+</b><small>LB</small></button><button class="mini-slot" data-slot="CB1"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="CB2"><b>+</b><small>CB</small></button><button class="mini-slot" data-slot="RB"><b>+</b><small>RB</small></button></div>
-          <div class="slot-row"><button class="mini-slot" data-slot="GK"><b>+</b><small>GK</small></button></div>
-        </div>
-        <label class="confirm-check"><input id="sellerConfirm" type="checkbox" required><span>Men e’lon ma’lumotlari to‘g‘riligini tasdiqlayman va platforma qoidalariga roziman.</span></label>
-        <button class="btn btn-gold submit-btn" id="submitListing" type="submit">E’lonni moderatsiyaga yuborish ↗</button><p id="formStatus" class="form-status" role="status"></p>
-      </form></div>
-    </section>
-    <section id="how" class="section how-section"><div class="section-heading"><div><p class="eyebrow">SAFE COMMUNITY</p><h2>Qanday <span>ishlaydi?</span></h2></div></div><div class="steps"><article><span>01</span><h3>Akkauntni top</h3><p>Futbolchilar tarkibi yoki narx bo‘yicha e’lonlarni qidir.</p></article><article><span>02</span><h3>Sotuvchi bilan bog‘lan</h3><p>E’londagi Telegram username orqali sotuvchiga yoz.</p></article><article><span>03</span><h3>Garant bilan kelish</h3><p>Bitim shartlarini oldindan muhokama qilish uchun garantga murojaat qil.</p></article></div><div class="guarantor-banner"><div><p class="eyebrow">MIDDLEMAN SERVICE</p><h3>Bitim bo‘yicha yordam kerakmi?</h3><p class="muted">Garant bilan Telegram orqali bog‘laning: @wxetg</p></div><a class="btn btn-gold" href="https://t.me/wxetg" target="_blank" rel="noopener">Garantga yozish ↗</a></div><p class="disclaimer">Mustaqil hamjamiyat platformasi. KONAMI yoki eFootball bilan rasmiy aloqasi yo‘q. Akkaunt savdosi o‘yin xizmat ko‘rsatish shartlariga zid bo‘lishi va akkaunt cheklanishiga olib kelishi mumkin. Har qanday bitimdan oldin amaldagi qoidalarni tekshiring. Platforma to‘lovlarni qabul qilmaydi va bitim xavfsizligini kafolatlamaydi.</p></section>
-  </main>
-  <footer class="site-footer"><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>MARKET</b></span></a><span>Mustaqil hamjamiyat loyihasi · © 2026</span><a href="https://t.me/wxetg" target="_blank" rel="noopener">@wxetg</a></footer>
-  <div id="playerModal" class="modal" aria-hidden="true"><div class="modal-backdrop" data-close="true"></div><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-head"><div><p class="eyebrow">PLAYER DATABASE</p><h3 id="modalTitle">Futbolchi tanlash</h3></div><button id="closeModal" class="close-btn" aria-label="Yopish">×</button></div><input id="playerSearch" class="modal-search" type="search" placeholder="Futbolchi ismini yozing…"><div id="playerResults" class="player-results"><p class="muted">Qidirish uchun futbolchi ismini yozing.</p></div></div></div>
-  <script src="config.js?v=1"></script><script src="app.js?v=5"></script>
+<header class="topbar"><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>TACTICS</b></span></a><nav><a href="#analyzer">Tarkib tahlili</a><a href="#guide">Qanday ishlaydi</a></nav></header>
+<main>
+<section class="hero"><div><p class="eyebrow">eFOOTBALL SQUAD INTELLIGENCE</p><h1>Tarkibingga mos<br><span>ideal taktika.</span></h1><p class="hero-sub">Tarkib skrinshotini yukla. Futbolchilarni aniqlab, mos formation va Team Playstyle bo‘yicha tavsiyalar ol.</p><a class="btn btn-gold" href="#analyzer">Tarkibni tahlil qilish ↓</a><p class="privacy-note">Skrinshot brauzeringizda qayta ishlanadi. Rasm serverga yuklanmaydi.</p></div><div class="hero-art"><div class="pitch"><div class="pitch-circle"></div><div class="pitch-box top"></div><div class="pitch-box bottom"></div><span class="pitch-ball">⚽</span></div><span class="hero-caption">BUILD YOUR BEST XI</span></div></section>
+<section id="analyzer" class="section"><div class="section-heading"><div><p class="eyebrow">SQUAD ANALYZER</p><h2>Akkaunt tarkibini <span>yuklang</span></h2><p class="muted">eFootball jamoangiz ko‘rinib turgan skrinshotni tanlang.</p></div><span class="step-tag">01 / UPLOAD</span></div>
+<div class="upload-layout"><div class="upload-card"><input id="squadFile" type="file" accept="image/png,image/jpeg,image/webp" hidden><button id="uploadArea" class="upload-area" type="button"><span class="upload-icon">↑</span><b>Skrinshotni shu yerga tashlang</b><small>yoki rasm tanlash uchun bosing · PNG, JPG, WEBP</small></button><div id="previewWrap" class="preview-wrap" hidden><img id="preview" alt="Yuklangan tarkib skrinshoti"><button id="removeImage" class="plain-btn" type="button">Rasmni olib tashlash</button></div><button id="analyzeBtn" class="btn btn-gold full-btn" type="button" disabled>Skrinshotni tahlil qilish</button><p id="uploadStatus" class="status" role="status">Hozircha rasm tanlanmagan.</p></div>
+<div class="info-card"><p class="eyebrow">QANDAY SKRINSHOT?</p><h3>Eng yaxshi natija uchun</h3><ul><li>Butun starting XI ko‘rinib tursin.</li><li>Futbolchi ismlari tiniq va o‘qiladigan bo‘lsin.</li><li>Faqat Squad / Game Plan ekranini yuboring.</li><li>Login, email, QR-kod yoki shaxsiy ma’lumotlar tushmasin.</li></ul><p class="tiny muted">OCR avtomatik tanishi mumkin, lekin natijalarni tasdiqlash yoki tuzatish talab qilinadi.</p></div></div>
+<div id="resultsSection" class="results-section" hidden><div class="section-heading compact"><div><p class="eyebrow">02 / RECOGNITION</p><h2>Aniqlangan <span>futbolchilar</span></h2><p class="muted">OCR matnidan topilgan nomzodlarni tarkibga qo‘shing.</p></div><span id="recognizedCount" class="step-tag">0 PLAYERS</span></div><div id="ocrText" class="ocr-box"></div><div class="manual-search"><label for="playerSearch">Topilmagan futbolchini bazadan qidirish</label><div class="search-row"><input id="playerSearch" type="search" placeholder="Masalan: Lionel Messi"><button id="searchBtn" class="btn btn-outline" type="button">Qidirish</button></div><div id="searchResults" class="search-results"></div></div>
+<div class="lineup-card"><div class="lineup-head"><div><p class="eyebrow">YOUR STARTING XI</p><h3>Tarkibingiz</h3></div><span id="lineupCount" class="step-tag">0 / 11</span></div><div id="lineup" class="lineup-grid"><p class="muted">Hozircha futbolchi qo‘shilmagan.</p></div><button id="recommendBtn" class="btn btn-gold full-btn" type="button" disabled>Ideal taktika tavsiya qilish ↗</button></div></div>
+<section id="recommendations" class="recommendations" hidden><div class="section-heading compact"><div><p class="eyebrow">03 / TACTICAL REPORT</p><h2>Taktika <span>tavsiyasi</span></h2></div></div><div id="tacticOutput"></div></section>
+</section>
+<section id="guide" class="section guide"><p class="eyebrow">HOW IT WORKS</p><h2>Uch qadamda <span>taktika</span></h2><div class="guide-grid"><article><b>01</b><h3>Skrinshot yuklang</h3><p>Starting XI ko‘rinadigan rasmni tanlang.</p></article><article><b>02</b><h3>Tarkibni tasdiqlang</h3><p>OCR aniqlagan futbolchilarni tekshiring, kerak bo‘lsa bazadan qo‘shing.</p></article><article><b>03</b><h3>Tavsiyani oling</h3><p>Formation va Team Playstyle bo‘yicha mos tavsiyalarni ko‘ring.</p></article></div><p class="disclaimer">Mustaqil hamjamiyat loyihasi. KONAMI yoki eFootball bilan rasmiy aloqasi yo‘q. Tavsiyalar mavjud futbolchi ma’lumotlari va tanlangan tarkib asosida taxminiy beriladi; o‘yin ichidagi natijani kafolatlamaydi.</p></section>
+</main><footer><a class="brand" href="./"><span class="brand-mark">e</span><span>eFOOT <b>TACTICS</b></span></a><span>Independent community project · © 2026</span></footer>
+<script src="config.js?v=1"></script><script src="app.js?v=6"></script>
 </body></html>
